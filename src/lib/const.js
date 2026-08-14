@@ -7,7 +7,8 @@ export const administrationList = new Map([
   ['bogminutes', 'BOG/FC/BWC Minutes'],
   ['senateminutes', 'Senate Minutes'],
   ['annualreport', 'Annual Reports'],
-  ['newcampus', 'New Campus']
+  ['newcampus', 'New Campus'],
+  ['admissions', 'Admissions']
 ])
 
 export const notice_sub_types = {
@@ -17,6 +18,14 @@ export const notice_sub_types = {
     ["regularnonteaching", "Regular Non-Teaching"],
     ["nonregularnonteaching", "Non-Regular Non-Teaching"],
     ["jdrfsrf", "JDRF/SRF"]
+  ],
+  "ADMISSIONS": [
+    ["btech", "B.Tech"],
+    ["mtech", "M.Tech"],
+    ["phd", "Ph.D"],
+    ["mca", "MCA"],
+    ["study_in_india", "Study in India"],
+    ["qip", "QIP"]
   ]
 }
 

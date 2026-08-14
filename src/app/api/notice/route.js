@@ -6,7 +6,7 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type")?.trim();
-    const noticeSubType = searchParams.get("notice_sub_type")?.trim().toUpperCase();
+    const noticeSubType = searchParams.get("notice_sub_type")?.trim()?.toUpperCase();
     const page = Math.max(1, parseInt(searchParams.get('page')) || 1);
     const limit = Math.min(50, parseInt(searchParams.get('limit')) || 20);
     const offset = (page - 1) * limit;
@@ -58,6 +58,18 @@ export async function GET(request) {
         results = await query(`SELECT * FROM notices WHERE notice_type = 'academics' ORDER BY timestamp DESC LIMIT ${limit} OFFSET ${offset}`);
         break;
 
+      case "admissions":
+        if (noticeSubType) {
+          const countRes = await query(`SELECT COUNT(*) as count FROM notices WHERE notice_type = 'admissions' AND UPPER(notice_sub_type) = UPPER(?)`, [noticeSubType]);
+          total = Number(countRes[0].count);
+          results = await query(`SELECT * FROM notices WHERE notice_type = 'admissions' AND UPPER(notice_sub_type) = UPPER(?) ORDER BY timestamp DESC LIMIT ${limit} OFFSET ${offset}`, [noticeSubType]);
+        } else {
+          const addCount = await query(`SELECT COUNT(*) as count FROM notices WHERE notice_type = 'admissions'`);
+          total = Number(addCount[0].count);
+          results = await query(`SELECT * FROM notices WHERE notice_type = 'admissions' ORDER BY timestamp DESC LIMIT ${limit} OFFSET ${offset}`);
+        }
+        break;
+
       case "facultystaffjob":
         const jobCount = await query(`SELECT COUNT(*) as count FROM notices WHERE notice_type = 'facultystaffjob'`);
         total = Number(jobCount[0].count);
@@ -67,9 +79,9 @@ export async function GET(request) {
       default:
         if (administrationList.has(type?.trim()?.toLowerCase())) {
           if (noticeSubType) {
-            const countRes = await query(`SELECT COUNT(*) as count FROM notices WHERE notice_type = ? AND notice_sub_type = ?`, [administrationList.get(type?.trim()?.toLowerCase()), noticeSubType]);
+            const countRes = await query(`SELECT COUNT(*) as count FROM notices WHERE notice_type = ? AND UPPER(notice_sub_type) = UPPER(?)`, [administrationList.get(type?.trim()?.toLowerCase()), noticeSubType]);
             total = Number(countRes[0].count);
-            results = await query(`SELECT * FROM notices WHERE notice_type = ? AND notice_sub_type = ? ORDER BY timestamp DESC LIMIT ${limit} OFFSET ${offset}`, [administrationList.get(type?.trim()?.toLowerCase()), noticeSubType]);
+            results = await query(`SELECT * FROM notices WHERE notice_type = ? AND UPPER(notice_sub_type) = UPPER(?) ORDER BY timestamp DESC LIMIT ${limit} OFFSET ${offset}`, [administrationList.get(type?.trim()?.toLowerCase()), noticeSubType]);
           } else {
             const countRes = await query(`SELECT COUNT(*) as count FROM notices WHERE notice_type = ?`, [administrationList.get(type?.trim()?.toLowerCase())]);
             total = Number(countRes[0].count);
@@ -115,6 +127,7 @@ export async function POST(request) {
       end_date,
       department,
       notice_type,
+      notice_sub_type,
       from,
       to,
       keyword = "",
@@ -176,16 +189,30 @@ export async function POST(request) {
               [`%${keyword}%`],
             );
           } else if (notice_type !== "department") {
-            results = await query(
-              `SELECT * FROM notices 
-               WHERE notice_type = ? 
-               AND closeDate <= ? 
-               AND openDate >= ? 
-               AND title LIKE ? 
-               ORDER BY openDate DESC 
-               LIMIT ${rangeLimit} OFFSET ${rangeOffset}`,
-              [notice_type, end_date, start_date, `%${keyword}%`],
-            );
+            if (notice_sub_type) {
+              results = await query(
+                `SELECT * FROM notices 
+                 WHERE notice_type = ? 
+                 AND UPPER(notice_sub_type) = UPPER(?)
+                 AND closeDate <= ? 
+                 AND openDate >= ? 
+                 AND title LIKE ? 
+                 ORDER BY openDate DESC 
+                 LIMIT ${rangeLimit} OFFSET ${rangeOffset}`,
+                [notice_type, notice_sub_type.trim(), end_date, start_date, `%${keyword}%`],
+              );
+            } else {
+              results = await query(
+                `SELECT * FROM notices 
+                 WHERE notice_type = ? 
+                 AND closeDate <= ? 
+                 AND openDate >= ? 
+                 AND title LIKE ? 
+                 ORDER BY openDate DESC 
+                 LIMIT ${rangeLimit} OFFSET ${rangeOffset}`,
+                [notice_type, end_date, start_date, `%${keyword}%`],
+              );
+            }
           } else {
             results = await query(
               `SELECT * FROM notices 

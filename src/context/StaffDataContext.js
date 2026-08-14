@@ -142,6 +142,11 @@ export function StaffDataProvider({ children }) {
         );
 
         if (!response.ok) {
+          if (response.status === 404) {
+            console.log("[StaffDataContext] Staff not found for:", userEmail);
+            setStaffData(null);
+            return;
+          }
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
@@ -226,8 +231,14 @@ export function StaffDataProvider({ children }) {
         },
       );
 
-      if (!response.ok)
+      if (!response.ok) {
+        if (response.status === 404) {
+          console.log("[StaffDataContext] Staff not found for:", userEmail);
+          setStaffData(null);
+          return;
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
       const flatRecord = await response.json();
       const data = wrapAsProfile(flatRecord);
